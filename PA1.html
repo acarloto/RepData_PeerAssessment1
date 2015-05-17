@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="author" content="acarloto" />
+
+<meta name="date" content="2015-05-16" />
+
+<title>Monitoring Steps</title>
+
+<script src="PA1_files/jquery-1.11.0/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="PA1_files/bootstrap-3.3.1/css/bootstrap.min.css" rel="stylesheet" />
+<script src="PA1_files/bootstrap-3.3.1/js/bootstrap.min.js"></script>
+<script src="PA1_files/bootstrap-3.3.1/shim/html5shiv.min.js"></script>
+<script src="PA1_files/bootstrap-3.3.1/shim/respond.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<link rel="stylesheet"
+      href="PA1_files/highlight/default.css"
+      type="text/css" />
+<script src="PA1_files/highlight/highlight.js"></script>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img { 
+  max-width:100%; 
+  height: auto; 
+}
+</style>
+<div class="container-fluid main-container">
+
+
+<div id="header">
+<h1 class="title">Monitoring Steps</h1>
+<h4 class="author"><em>acarloto</em></h4>
+<h4 class="date"><em>May 16, 2015</em></h4>
+</div>
+
+
+<div id="introduction" class="section level3">
+<h3>Introduction</h3>
+<p>This guided report was done to the Reproducible Research Course, hosted in Coursera. We had to analyse the data collected from an individual during two months. The data consists in the number of steps taken in 5 minute intervals each day.</p>
+</div>
+<div id="loading-and-preprocessing-the-data" class="section level3">
+<h3>Loading and preprocessing the data</h3>
+<p>First, we had to load the data, look at it and made some minor transformations on it.</p>
+<pre class="r"><code># Load the data
+data &lt;- read.csv(&quot;data/activity.csv&quot;)
+
+# Looking at the data
+str(data)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Factor w/ 61 levels &quot;2012-10-01&quot;,&quot;2012-10-02&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...</code></pre>
+<pre class="r"><code>head(data)</code></pre>
+<pre><code>##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25</code></pre>
+<p>We can see that we are dealing with a data frame with 17568 observations and 3 variables: steps (int) - the number of steps in each interval; date (Factor) and interval (int) - the id of each 5 min. interval. There are a considerable number of cells with NAs (we will deal with that later) and the format of the date variable is not the more appropriate.</p>
+<pre class="r"><code># Transform variable date from class &quot;Factor&quot; to class &quot;Date&quot;
+library(lubridate)
+data$date &lt;- ymd(data$date)</code></pre>
+</div>
+<div id="what-is-mean-total-number-of-steps-taken-per-day" class="section level2">
+<h2>What is mean total number of steps taken per day?</h2>
+<p>For this work I will often manipulate the data in the format of data.table, which I find easier and faster than in the format of data frame, for many operations. In this first approach, I will not pay attention to the missing steps data, for now.</p>
+<pre class="r"><code>library(data.table)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;data.table&#39;
+## 
+## The following objects are masked from &#39;package:lubridate&#39;:
+## 
+##     hour, mday, month, quarter, wday, week, yday, year</code></pre>
+<pre class="r"><code># Convert to data table
+DT &lt;- as.data.table(data)
+
+# Calculate the sum of steps for each day
+totalByDay &lt;- DT[, .(sumDay = sum(na.omit(steps))), by = date ]</code></pre>
+<pre class="r"><code># Make histogram
+hist(totalByDay$sumDay, col = &quot;blue&quot;, main = &quot;Steps Taken Each Day&quot;, 
+     xlab = &quot;Steps/Day&quot;, breaks = 12, xlim = c(0, 25000))</code></pre>
+<p><img src="PA1_files/figure-html/histogram1-1.png" /></p>
+<pre class="r"><code># View mean and median
+summary(totalByDay)</code></pre>
+<pre><code>##       date                sumDay     
+##  Min.   :2012-10-01   Min.   :    0  
+##  1st Qu.:2012-10-16   1st Qu.: 6778  
+##  Median :2012-10-31   Median :10395  
+##  Mean   :2012-10-31   Mean   : 9354  
+##  3rd Qu.:2012-11-15   3rd Qu.:12811  
+##  Max.   :2012-11-30   Max.   :21194</code></pre>
+<p>We can see that the distribution of steps per day have some resemblance with a normal distribution, but with gaps, a high % of days with 0 or very few steps (which probably is caused by a lot of missing data in those days) and a high variance. The mean (9354) is smallest than the median (10395), sign that the distribution is skewed to the left.</p>
+<div id="what-is-the-average-daily-activity-pattern" class="section level3">
+<h3>What is the average daily activity pattern?</h3>
+<p>This kind of activity can be studied in a time serie of days, but perhaps is more interesting to know the daily activity pattern; how the number of steps in the 288 5 min. chunks varies along the day. Note that the intervals id do not correspond exactly with minutes, e.g. the id 55 (55 min.) is followed by the id 100 (1 h and 0 min.). So, the day beguins with interval 0 (0 min.) and ends with interval 2355 (23 h and 55 min.).</p>
+<pre class="r"><code># Calculate the mean of steps for each daily interval
+meanByInterval &lt;- DT[ , .(meanDay = mean(na.omit(steps))), by = interval ]</code></pre>
+<pre class="r"><code># Make time series
+plot(meanByInterval$interval, meanByInterval$meanDay, type = &quot;l&quot;, col = &quot;green&quot;,
+     main = &quot;Average Daily Activity Pattern&quot;, xlab = &quot;Intervals&quot;, 
+     ylab = &quot;Average Steps&quot;)</code></pre>
+<p><img src="PA1_files/figure-html/timeseries1-1.png" /></p>
+<pre class="r"><code># Identify the daily interval with more steps, on average
+intervalMax &lt;- meanByInterval$interval[ meanByInterval$meanDay == 
+                                          max(meanByInterval$meanDay)]
+intervalMax</code></pre>
+<pre><code>## [1] 835</code></pre>
+<p>As expected, the average number of steps decreases notably to the end of the day, reaching near zero values when, presumably, the person goes to bed, and stays that way till around 5 of the morning, when the person gets up and the number of steps beguins to increase. The peak of the day (~ 200 steps) is reached at interval 835 (8:35). We can speculate that at this time the person does some kind of voluntary (e.g. jogging) or involuntary exercise (e.g. runs to catch the train). By 10:00, this burst of activity is finished, and the average number of steps by interval remain stabilized throughout the day, oscillating between 50 and 100.</p>
+</div>
+<div id="imputing-missing-values" class="section level3">
+<h3>Imputing missing values</h3>
+<p>A high number of missing observations (NAs) can introduce an important amount of bias, so, as suggested by our instructor, I opted to replace those NAs with the mean of steps for the correspondent interval, and verify what changes in the data profile.</p>
+<pre class="r"><code># Count the rows with NAs
+table(rowSums(is.na(data)))</code></pre>
+<pre><code>## 
+##     0     1 
+## 15264  2304</code></pre>
+<pre class="r"><code># Create a new data set with all NA cells filled with the mean of steps for the
+# correspondend interval
+cleanFun &lt;- function(data) {
+  for(i in 1:length(data$steps)) {
+    interval &lt;- data$interval[i]
+    if(is.na(data$steps[i])) {
+      data$steps[i] &lt;- mean(na.omit(data$steps[data$interval == interval]))
+    }
+  }
+  return(data)
+}
+
+cleanData &lt;- cleanFun(data)
+
+# Make new data table
+DT2 &lt;- as.data.table(cleanData)
+
+# Calculate total steps per day, plot and see summary
+totalByDay &lt;- DT2[, .(sumDay = sum(na.omit(steps))), by = date ]</code></pre>
+<pre class="r"><code>hist(totalByDay$sumDay, col = &quot;red&quot;, main = &quot;Steps Taken Each Day&quot;, 
+     xlab = &quot;Steps/Day&quot;, breaks = 12, xlim = c(0, 25000))</code></pre>
+<p><img src="PA1_files/figure-html/histogram2-1.png" /></p>
+<pre class="r"><code>summary(totalByDay)</code></pre>
+<pre><code>##       date                sumDay     
+##  Min.   :2012-10-01   Min.   :   41  
+##  1st Qu.:2012-10-16   1st Qu.: 9819  
+##  Median :2012-10-31   Median :10766  
+##  Mean   :2012-10-31   Mean   :10766  
+##  3rd Qu.:2012-11-15   3rd Qu.:12811  
+##  Max.   :2012-11-30   Max.   :21194</code></pre>
+<p>The data set had a lot of NAs! A total of 2304 rows in 17568 had missing values in the steps variable. Filling in those cells,we can see that the new histogram seems more “normal” than the previous one, with the very low number of steps desappearing from the left side of the figure. Other important change is that the mean rised from 9354 to 10766 steps and now coincides with the median.</p>
+</div>
+<div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level3">
+<h3>Are there differences in activity patterns between weekdays and weekends?</h3>
+<p>People that have a job tend to have distinct patterns of activity in weekdays compared with the weekend. Let’s find if is this so with the person in question.</p>
+<pre class="r"><code># Create Factor variable weekday with two levels: &quot;weekday&quot; or &quot;weekend&quot;
+cleanData$weekday &lt;- ifelse(weekdays(cleanData$date) %in% c(&quot;Saturday&quot;, &quot;Sunday&quot;), 
+                        &quot;weekend&quot;, &quot;weekday&quot;)                       
+cleanData$weekday &lt;- as.factor(cleanData$weekday)
+
+# Create new data table with this new variable
+DT3 &lt;- as.data.table(cleanData)
+
+# Calculate mean by interval
+meanByInterval &lt;- DT3[ , .(meanDay = mean(na.omit(steps))), by = .(interval, weekday)]
+
+# Convert to data frame to facilitate plotting with ggplot2
+meanByInterval &lt;- as.data.frame(meanByInterval)
+
+# Load ggplot2
+library(ggplot2)</code></pre>
+<pre class="r"><code># Plot
+qplot(interval, meanDay, data = meanByInterval, color = weekday, geom = &quot;line&quot;,
+      main = &quot;Average Daily Activity Pattern&quot;, xlab = &quot;Intervals&quot;, ylab = &quot;Average Steps&quot;)</code></pre>
+<p><img src="PA1_files/figure-html/timeseries2-1.png" /></p>
+<p>By the plot above, we can conclude that the pattern of average daily activity is somewhat different between weekdays and the weekend: At weekends the physical activity is a little superior and more evenly distributed throughout the day; beguins later in the morning (this is not a surprise) and the peak of steps, although coinciding in interval, is lower and bimodal.</p>
+</div>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
